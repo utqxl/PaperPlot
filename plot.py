@@ -19,8 +19,8 @@ start_date_filter = dt.datetime(2024, 6, 10)
 end_date_filter = dt.datetime(2024, 6, 12, 12, 0, 0)
 
 # Day/night settings (UTC)
-day_start_hour = 18  # 20:00 UTC (8:00 AM local time + 10 hours)
-day_end_hour = 3     # 11:00 UTC (17:00 PM local time + 10 hours)
+day_start_hour = 18  # 18:00 UTC (8:00 AM local time + 10 hours)
+day_end_hour = 3     # 3:00 UTC (17:00 PM local time + 10 hours)
 
 # =============================================================================
 # ACSM DATA PROCESSING
