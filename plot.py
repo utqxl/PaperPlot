@@ -19,7 +19,7 @@ start_date_filter = dt.datetime(2024, 6, 10)
 end_date_filter = dt.datetime(2024, 6, 12, 12, 0, 0)
 
 # Day/night settings (UTC)
-day_start_hour = 18  # 18:00 UTC (8:00 AM local time + 10 hours)
+day_start_hour = 17  # 18:00 UTC (8:00 AM local time + 10 hours)
 day_end_hour = 3     # 3:00 UTC (17:00 PM local time + 10 hours)
 
 # =============================================================================
@@ -108,12 +108,12 @@ def add_day_night_shading(ax, time_min, time_max):
 add_day_night_shading(ax1, start_date_filter, end_date_filter)
 
 for species in species_to_plot:
-    label = "total organics" if species == "total_organics" else species
+    label = species.replace("_", " ").title()
     ax1.plot(acsm_ds["time"], acsm_ds[species], label=label, 
             color=colors.get(species, "black"), linewidth=2, zorder=3)
 
 ax1.set_ylim(0, 2.5)
-ax1.set_ylabel("ACSM mass conc. ($\mu g\ m^{-3}$)", fontsize=24)
+ax1.set_ylabel("ACSM Mass Concentration \n ($\mu g\ m^{-3}$)", fontsize=24)
 ax1.tick_params(axis='y', labelsize=20)
 ax1.grid(True, alpha=0.3, zorder=2)
 ax1.legend(loc="upper right", fontsize=20, frameon=True, fancybox=True, shadow=True)
@@ -133,7 +133,7 @@ scatter = ax2.scatter(ccn_ds["time"], ccn_concentration, c=ccn_ss * 100, cmap=cm
                       s=10, zorder=3)
 
 ax2.set_yscale("log")
-ax2.set_ylabel("CCN conc. ($cm^{-3}$)", fontsize=24)
+ax2.set_ylabel("CCN Concentration \n ($cm^{-3}$)", fontsize=24)
 ax2.tick_params(axis='y', labelsize=20)
 ax2.grid(True, alpha=0.3, zorder=2)
 ax2.set_ylim(1e1, 1e4) 
@@ -150,7 +150,7 @@ add_day_night_shading(ax3, start_date_filter, end_date_filter)
 
 ax3.plot(pd.to_datetime(wind_time_avg), wind_speed_data_avg, color="blue", linewidth=2, zorder=3)
 
-ax3.set_ylabel("Wind speed ($\mathrm{m\ s^{-1}}$)", fontsize=24)
+ax3.set_ylabel("Wind Speed \n ($\mathrm{m\ s^{-1}}$)", fontsize=24)
 ax3.tick_params(axis='y', labelsize=20)
 ax3.grid(True, alpha=0.3, zorder=2)
 
@@ -179,4 +179,5 @@ ax1.set_xlim(start_date_filter, end_date_filter)
 
 fig.align_ylabels(axes)
 plt.savefig('ARM.png', dpi=300, bbox_inches='tight')
+plt.savefig('ARM.svg', format="svg", bbox_inches='tight')
 plt.show()
