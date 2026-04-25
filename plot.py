@@ -81,6 +81,15 @@ fig, axes = plt.subplots(3, 1, figsize=(20, 15), sharex=True,
                         constrained_layout=True)
 ax1, ax2, ax3 = axes 
 
+# Add panel labels
+labels = ['(a)', '(b)', '(c)']
+for ax, label in zip(axes, labels):
+    ax.text(0.01, 0.95, label,
+            transform=ax.transAxes,
+            fontsize=24,
+            va='top', ha='left')
+
+
 def add_day_night_shading(ax, time_min, time_max):
     """Add day/night background shading to a plot"""
     time_min = pd.to_datetime(time_min)
@@ -114,9 +123,9 @@ for species in species_to_plot:
 
 ax1.set_ylim(0, 2.5)
 ax1.set_ylabel("ACSM Mass Concentration \n ($\mu g\ m^{-3}$)", fontsize=24)
-ax1.tick_params(axis='y', labelsize=20)
+ax1.tick_params(axis='y', labelsize=24)
 ax1.grid(True, alpha=0.3, zorder=2)
-ax1.legend(loc="upper right", fontsize=20, frameon=True, fancybox=True, shadow=True)
+ax1.legend(loc="upper right", fontsize=24, frameon=True, fancybox=True, shadow=True)
 
 # =============================================================================
 # PANEL 2: CCN CONCENTRATION
@@ -134,13 +143,13 @@ scatter = ax2.scatter(ccn_ds["time"], ccn_concentration, c=ccn_ss * 100, cmap=cm
 
 ax2.set_yscale("log")
 ax2.set_ylabel("CCN Concentration \n ($cm^{-3}$)", fontsize=24)
-ax2.tick_params(axis='y', labelsize=20)
+ax2.tick_params(axis='y', labelsize=24)
 ax2.grid(True, alpha=0.3, zorder=2)
 ax2.set_ylim(1e1, 1e4) 
 
 cbar = fig.colorbar(scatter, ax=ax2, orientation='vertical', pad=0.02)
-cbar.set_label('Supersaturation (%)', fontsize=20)
-cbar.ax.tick_params(labelsize=20)
+cbar.set_label('Supersaturation (%)', fontsize=24)
+cbar.ax.tick_params(labelsize=24)
 
 # =============================================================================
 # PANEL 3: WIND SPEED (10-MINUTE AVERAGE)
@@ -151,7 +160,7 @@ add_day_night_shading(ax3, start_date_filter, end_date_filter)
 ax3.plot(pd.to_datetime(wind_time_avg), wind_speed_data_avg, color="blue", linewidth=2, zorder=3)
 
 ax3.set_ylabel("Wind Speed \n ($\mathrm{m\ s^{-1}}$)", fontsize=24)
-ax3.tick_params(axis='y', labelsize=20)
+ax3.tick_params(axis='y', labelsize=24)
 ax3.grid(True, alpha=0.3, zorder=2)
 
 max_wind = np.nanmax(wind_speed_data_avg)
@@ -173,7 +182,8 @@ def custom_formatter(x, pos=None):
         return ""
 
 ax3.xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter))
-ax3.tick_params(axis='x', labelsize=20)
+ax3.tick_params(axis='x', pad=12)
+ax3.tick_params(axis='x', labelsize=24)
 
 ax1.set_xlim(start_date_filter, end_date_filter)
 
