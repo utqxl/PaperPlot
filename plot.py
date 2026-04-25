@@ -65,12 +65,28 @@ met_ds = xr.open_mfdataset(met_filelist, combine="by_coords", compat='override',
 met_ds = met_ds.sel(time=(met_ds["time"] >= np.datetime64(start_date_filter)) & 
                     (met_ds["time"] <= np.datetime64(end_date_filter)))
 
+# Wind speed
 wind_speed_data = met_ds['wind_speed']
 wind_series = wind_speed_data.to_series()
-wind_avg = wind_series.rolling(window='10min', center=True).mean()
+wind_speed_avg = wind_series.rolling(window='10min', center=True).mean()
 
-wind_time_avg = wind_avg.index.to_numpy()
-wind_speed_data_avg = wind_avg.values
+# Wind direction (circular mean via vector components)
+wind_dir = met_ds['wind_direction']
+wind_dir_rad = np.deg2rad(wind_dir)
+
+wind_dir_u = np.cos(wind_dir_rad)
+wind_dir_v = np.sin(wind_dir_rad)
+
+wind_dir_u_avg = wind_dir_u.to_series().rolling(window='10min', center=True).mean()
+wind_dir_v_avg = wind_dir_v.to_series().rolling(window='10min', center=True).mean()
+
+wind_dir_avg = np.rad2deg(np.arctan2(wind_dir_v_avg, wind_dir_u_avg)) % 360
+
+# time alignment
+wind_time_avg = wind_speed_avg.index.to_numpy()
+wind_speed_data_avg = wind_speed_avg.values
+wind_dir_data_avg = wind_dir_avg.values
+
 
 # =============================================================================
 # CREATE MULTI-PANEL PLOT 
@@ -152,20 +168,49 @@ cbar.set_label('Supersaturation (%)', fontsize=24)
 cbar.ax.tick_params(labelsize=24)
 
 # =============================================================================
-# PANEL 3: WIND SPEED (10-MINUTE AVERAGE)
+# PANEL 3: WIND SPEED + DIRECTION (10-MINUTE AVERAGE)
 # =============================================================================
 
 add_day_night_shading(ax3, start_date_filter, end_date_filter)
 
-ax3.plot(pd.to_datetime(wind_time_avg), wind_speed_data_avg, color="blue", linewidth=2, zorder=3)
+ax3.plot(pd.to_datetime(wind_time_avg),
+          wind_speed_data_avg, 
+          color="blue", 
+          label="Wind Speed", 
+          linewidth=2, 
+          zorder=4)
 
 ax3.set_ylabel("Wind Speed \n ($\mathrm{m\ s^{-1}}$)", fontsize=24)
 ax3.tick_params(axis='y', labelsize=24)
 ax3.grid(True, alpha=0.3, zorder=2)
 
 max_wind = np.nanmax(wind_speed_data_avg)
-ax3.set_ylim(0, np.ceil(max_wind * 1.1))
 
+ax3.set_ylim(0, np.ceil(max_wind * 1.1))
+ax3_dir = ax3.twinx()
+
+ax3_dir.plot(pd.to_datetime(wind_time_avg),
+             wind_dir_data_avg,
+             color="red",
+             linewidth=2,
+             label="Wind Direction",
+             zorder=3)
+
+ax3_dir.set_ylabel("Wind Direction (°)", fontsize=24)
+ax3_dir.tick_params(axis='y', labelsize=24)
+
+lines_1, labels_1 = ax3.get_legend_handles_labels()
+lines_2, labels_2 = ax3_dir.get_legend_handles_labels()
+
+ax3.legend(lines_1 + lines_2,
+           labels_1 + labels_2,
+           loc="lower right",
+           fontsize=24,
+           frameon=True)
+
+
+ax3_dir.set_ylim(0, 360)
+ax3_dir.axhspan(190, 270, color='grey', alpha=0.2, zorder = 1)
 # =============================================================================
 # FINAL PLOT FORMATTING
 # =============================================================================
