@@ -86,9 +86,8 @@ for species in species_to_plot:
              color=colors.get(species, "black"), linewidth=2, zorder=3)
 ax1.set_ylim(0, 2.5)
 ax1.set_ylabel("ACSM Mass Concentration\n($\mu$g m$^{-3}$)", fontsize=24)
-ax1.tick_params(axis='both', labelsize=24)
+ax1.tick_params(axis='both', labelsize=24, length=8)
 ax1.minorticks_off()
-ax1.grid(True, alpha=0.3, zorder=2)
 ax1.legend(loc="upper right", fontsize=24, frameon=True, fancybox=True, shadow=True, bbox_to_anchor=(0.935, 1))
 
 # Panel 2: CCN concentration
@@ -99,13 +98,12 @@ scatter = ax2.scatter(ccn_ds["time"], ccn_concentration, c=ccn_ss * 100, cmap=pl
 ax2.set_yscale("log")
 ax2.set_ylim(1e1, 5e3)
 ax2.set_ylabel("CCN Concentration\n(cm$^{-3}$)", fontsize=24)
-ax2.tick_params(axis='both', labelsize=24)
+ax2.tick_params(axis='both', labelsize=24, length=8)
 ax2.minorticks_off()
-ax2.grid(True, alpha=0.3, zorder=2)
 
 cbar_ax = fig.add_axes([0.9, ax2_pos_before.y0, 0.015, ax2_pos_before.height])
 cbar = fig.colorbar(scatter, cax=cbar_ax)
-cbar.ax.tick_params(labelsize=24)
+cbar.ax.tick_params(labelsize=24, length=8)
 cbar.ax.minorticks_off()
 ax2.set_position(ax2_pos_before)
 
@@ -122,11 +120,10 @@ ax3.patch.set_visible(False)
 ax3.plot(pd.to_datetime(wind_time_avg), wind_speed_data_avg, color="blue", linewidth=2, zorder=5)
 ax3.set_ylabel("Wind Speed\n(m s$^{-1}$)", fontsize=24)
 ax3.set_ylim(0, 27)
-ax3.tick_params(axis='both', labelsize=24)
+ax3.tick_params(axis='both', labelsize=24, length=8)
 ax3.minorticks_off()
-ax3.grid(True, alpha=0.3, zorder=2)
 ax3_dir.set_ylabel("Wind Direction (°)", fontsize=24, labelpad=45)
-ax3_dir.tick_params(axis='y', labelsize=24)
+ax3_dir.tick_params(axis='y', labelsize=24, length=8)
 ax3_dir.minorticks_off()
 ax3_dir.set_ylim(0, 360)
 
@@ -157,7 +154,7 @@ def custom_formatter(x, pos=None):
         return "12"
     return ""
 ax3.xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter))
-ax3.tick_params(axis='x', pad=12, labelsize=24)
+ax3.tick_params(axis='x', pad=12, labelsize=24, length=8)
 ax1.set_xlim(start_date_filter, end_date_filter)
 
 fig.align_ylabels(axes)
