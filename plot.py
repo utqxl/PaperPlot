@@ -172,7 +172,6 @@ ax3_dir.set_ylim(0, 360)
 legend_elements = [
     Line2D([0], [0], color='blue', linewidth=2, label='Wind Speed'),
     Line2D([0], [0], color='red', linewidth=2, label='Wind Direction'),
-    Line2D([0], [0], color='grey', linewidth=2, linestyle='--', label='Before 00:00 Jun 11'),
     Patch(facecolor='none', edgecolor='red', alpha=0.7, hatch='////', label='Baseline Sector')
 ]
 ax3.legend(handles=legend_elements, loc="lower right", fontsize=20, frameon=True, bbox_to_anchor=(0.95, 0.01))
