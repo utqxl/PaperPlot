@@ -1,6 +1,8 @@
 import os
 import glob
 import xarray as xr
+import matplotlib as mpl
+mpl.rcParams['mathtext.default'] = 'regular'
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -112,7 +114,7 @@ ax3_dir = ax3.twinx()
 add_day_night_shading(ax3, start_date_filter, end_date_filter)
 ax3_dir.patch.set_visible(False)
 # Baseline sector
-ax3_dir.axhspan(190, 280, facecolor='none', edgecolor='darkgrey', linewidth=2, 
+ax3_dir.axhspan(190, 280, facecolor='none', edgecolor='red', linewidth=2, 
                 alpha=0.7, hatch='////', zorder=1, label="Baseline Sector")
 ax3_dir.plot(pd.to_datetime(wind_time_avg), wind_dir_data_avg, color="red", linewidth=2, zorder=2)
 ax3.set_zorder(ax3_dir.get_zorder() + 1)
@@ -130,7 +132,7 @@ ax3_dir.set_ylim(0, 360)
 legend_elements = [
     Line2D([0], [0], color='blue', linewidth=2, label='Wind Speed'),
     Line2D([0], [0], color='red', linewidth=2, label='Wind Direction'),
-    Patch(facecolor='none', edgecolor='darkgrey', alpha=0.7, hatch='////', label='Baseline Sector')
+    Patch(facecolor='none', edgecolor='red', alpha=0.7, hatch='////', label='Baseline Sector')
 ]
 ax3.legend(handles=legend_elements, loc="lower right", fontsize=24, frameon=True, bbox_to_anchor=(0.95, 0.01))
 
