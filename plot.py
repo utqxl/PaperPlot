@@ -19,7 +19,7 @@ end_date_filter = dt.datetime(2024, 6, 12, 12, 0, 0)
 day_start_hour = 17
 day_end_hour = 3
 
-# Date threshold: before this = dashed, after = solid
+# Date threshold for period shading
 transition_date = np.datetime64('2024-06-11T00:00:00')
 
 # Load ACSM data
@@ -32,19 +32,13 @@ species_to_plot = ["total_organics", "nitrate", "ammonium", "sulfate", "chloride
 colors = {"total_organics": "green", "nitrate": "blue", "ammonium": "gold", 
           "sulfate": "red", "chloride": "pink"}
 
-# Split ACSM data
-acsm_before = acsm_ds.sel(time=acsm_ds["time"] < transition_date)
-acsm_after = acsm_ds.sel(time=acsm_ds["time"] >= transition_date)
-
 # Load CCN data
 ccn_ds = xr.open_mfdataset(sorted(glob.glob(os.path.join("CCN", "*.nc"))), 
                            combine="by_coords", compat='override', coords="all")
 ccn_ds = ccn_ds.sel(time=(ccn_ds["time"] >= np.datetime64(start_date_filter)) & 
                     (ccn_ds["time"] <= np.datetime64(end_date_filter)))
-
-# Split CCN data
-ccn_before = ccn_ds.sel(time=ccn_ds["time"] < transition_date)
-ccn_after = ccn_ds.sel(time=ccn_ds["time"] >= transition_date)
+ccn_concentration = ccn_ds['N_CCN'].values
+ccn_ss = ccn_ds['CCN_supersaturation_set_point'].values
 
 # Load and process wind data
 met_ds = xr.open_mfdataset(sorted(glob.glob(os.path.join("Met", "*.nc"))), 
@@ -60,11 +54,6 @@ wind_dir_data_avg = np.rad2deg(np.arctan2(wind_dir_v_avg, wind_dir_u_avg)) % 360
 wind_time_avg = wind_series.index.to_numpy()
 wind_speed_data_avg = wind_series.values
 
-# Split wind data
-wind_time_dt = pd.to_datetime(wind_time_avg)
-wind_before_mask = wind_time_dt < pd.to_datetime(transition_date)
-wind_after_mask = ~wind_before_mask
-
 # Create figure
 fig, axes = plt.subplots(3, 1, figsize=(20, 15), sharex=True, gridspec_kw={'height_ratios': [1, 1, 1]})
 fig.subplots_adjust(left=0.08, right=0.85, top=0.95, bottom=0.08, hspace=0.12)
@@ -78,30 +67,24 @@ ax3_pos_before = ax3.get_position()
 for ax, label in zip(axes, ['(a)', '(b)', '(c)']):
     ax.text(0.01, 0.95, label, transform=ax.transAxes, fontsize=24, va='top', ha='left')
 
-# Day/night shading function
-def add_day_night_shading(ax, time_min, time_max):
+# Function to add period shading (baseline vs continental inflow)
+def add_period_shading(ax, time_min, time_max):
     time_min = pd.to_datetime(time_min)
     time_max = pd.to_datetime(time_max)
-    current_date = time_min.date() - dt.timedelta(days=1)
-    while current_date <= time_max.date() + dt.timedelta(days=1):
-        day_start = dt.datetime.combine(current_date, dt.time(day_start_hour, 0))
-        day_end = dt.datetime.combine(current_date + dt.timedelta(days=1), dt.time(day_end_hour, 0))
-        night_start = dt.datetime.combine(current_date, dt.time(day_end_hour, 0))
-        night_end = dt.datetime.combine(current_date, dt.time(day_start_hour, 0))
-        if day_start < time_max and day_end > time_min:
-            ax.axvspan(max(day_start, time_min), min(day_end, time_max), alpha=0.2, color='yellow', zorder=1)
-        if night_start < time_max and night_end > time_min:
-            ax.axvspan(max(night_start, time_min), min(night_end, time_max), alpha=0.1, color='grey', zorder=1)
-        current_date += dt.timedelta(days=1)
+    transition = pd.to_datetime(transition_date)
+    
+    # Continental inflow period (before transition)
+    if time_min < transition:
+        ax.axvspan(time_min, min(transition, time_max), alpha=0.15, color='orange', zorder=0)
+    
+    # Baseline period (after transition)
+    if transition < time_max:
+        ax.axvspan(max(transition, time_min), time_max, alpha=0.15, color='lightblue', zorder=0)
 
 # Panel 1: ACSM species
-add_day_night_shading(ax1, start_date_filter, end_date_filter)
+add_period_shading(ax1, start_date_filter, end_date_filter)
 for species in species_to_plot:
-    # Before transition: dashed lines
-    ax1.plot(acsm_before["time"], acsm_before[species], 
-             color=colors.get(species, "black"), linewidth=2, linestyle='--', zorder=3, alpha=0.7)
-    # After transition: solid lines
-    ax1.plot(acsm_after["time"], acsm_after[species], 
+    ax1.plot(acsm_ds["time"], acsm_ds[species], 
              label=species.replace("_", " ").title(), 
              color=colors.get(species, "black"), linewidth=2, zorder=3)
 
@@ -109,21 +92,27 @@ ax1.set_ylim(0, 2.5)
 ax1.set_ylabel("Aerosol Chemical \n Speciation Monitor Mass \n Concentration ($\mu$g m$^{-3}$)", fontsize=24)
 ax1.tick_params(axis='both', labelsize=24, length=8)
 ax1.minorticks_off()
-ax1.legend(loc="upper right", fontsize=24, frameon=True, fancybox=True, shadow=True, bbox_to_anchor=(0.935, 1))
+
+# Add ACSM species legend
+acsm_legend = ax1.legend(loc="upper right", fontsize=24, frameon=True, fancybox=True, shadow=True, bbox_to_anchor=(0.935, 1))
+
+# Add separate period shading legend
+period_legend_elements = [
+    Patch(facecolor='orange', alpha=0.15, label='Continental'),
+    Patch(facecolor='lightblue', alpha=0.15, label='Baseline')
+]
+period_legend = ax1.legend(handles=period_legend_elements, loc='center left', 
+                           fontsize=24, frameon=True, fancybox=True, shadow=True,
+                           bbox_to_anchor=(1.02, 0.5))
+
+# Add the first legend back (since second legend replaces it)
+ax1.add_artist(acsm_legend)
 
 # Panel 2: CCN concentration
-add_day_night_shading(ax2, start_date_filter, end_date_filter)
-norm = mcolors.Normalize(vmin=np.nanmin(ccn_ds['CCN_supersaturation_set_point'].values) * 100, 
-                         vmax=np.nanmax(ccn_ds['CCN_supersaturation_set_point'].values) * 100)
-
-# Both before and after as scatter (CCN is typically plotted as scatter)
-scatter_before = ax2.scatter(ccn_before["time"], ccn_before['N_CCN'].values, 
-                             c=ccn_before['CCN_supersaturation_set_point'].values * 100, cmap=plt.cm.plasma, 
-                             norm=norm, s=15, marker='o', edgecolors='black', linewidth=0.1, zorder=4, alpha=0.7)
-scatter = ax2.scatter(ccn_after["time"], ccn_after['N_CCN'].values, 
-                      c=ccn_after['CCN_supersaturation_set_point'].values * 100, cmap=plt.cm.plasma, 
+add_period_shading(ax2, start_date_filter, end_date_filter)
+norm = mcolors.Normalize(vmin=np.nanmin(ccn_ss) * 100, vmax=np.nanmax(ccn_ss) * 100)
+scatter = ax2.scatter(ccn_ds["time"], ccn_concentration, c=ccn_ss * 100, cmap=plt.cm.plasma, 
                       norm=norm, s=10, zorder=3)
-
 ax2.set_yscale("log")
 ax2.set_ylim(1e1, 5e3)
 ax2.set_ylabel("CCN Concentration\n(cm$^{-3}$)", fontsize=24)
@@ -138,28 +127,16 @@ ax2.set_position(ax2_pos_before)
 
 # Panel 3: Wind speed and direction
 ax3_dir = ax3.twinx()
-add_day_night_shading(ax3, start_date_filter, end_date_filter)
+add_period_shading(ax3, start_date_filter, end_date_filter)
 ax3_dir.patch.set_visible(False)
 
 # Baseline sector
 ax3_dir.axhspan(190, 280, facecolor='none', edgecolor='red', linewidth=2, 
                 alpha=0.7, hatch='////', zorder=1, label="Baseline Sector")
-
-# Wind direction: dashed before, solid after
-ax3_dir.plot(wind_time_dt[wind_before_mask], wind_dir_data_avg[wind_before_mask], 
-             color="red", linewidth=2, linestyle='--', zorder=2, alpha=0.7)
-ax3_dir.plot(wind_time_dt[wind_after_mask], wind_dir_data_avg[wind_after_mask], 
-             color="red", linewidth=2, zorder=2)
-
+ax3_dir.plot(pd.to_datetime(wind_time_avg), wind_dir_data_avg, color="red", linewidth=2, zorder=2)
 ax3.set_zorder(ax3_dir.get_zorder() + 1)
 ax3.patch.set_visible(False)
-
-# Wind speed: dashed before, solid after
-ax3.plot(wind_time_dt[wind_before_mask], wind_speed_data_avg[wind_before_mask], 
-         color="blue", linewidth=2, linestyle='--', zorder=5, alpha=0.7)
-ax3.plot(wind_time_dt[wind_after_mask], wind_speed_data_avg[wind_after_mask], 
-         color="blue", linewidth=2, zorder=5)
-
+ax3.plot(pd.to_datetime(wind_time_avg), wind_speed_data_avg, color="blue", linewidth=2, zorder=5)
 ax3.set_ylabel("Wind Speed\n(m s$^{-1}$)", fontsize=24)
 ax3.set_ylim(0, 27)
 ax3.tick_params(axis='both', labelsize=24, length=8)
@@ -174,7 +151,7 @@ legend_elements = [
     Line2D([0], [0], color='red', linewidth=2, label='Wind Direction'),
     Patch(facecolor='none', edgecolor='red', alpha=0.7, hatch='////', label='Baseline Sector')
 ]
-ax3.legend(handles=legend_elements, loc="lower right", fontsize=20, frameon=True, bbox_to_anchor=(0.95, 0.01))
+ax3.legend(handles=legend_elements, loc="lower right", fontsize=24, frameon=True, bbox_to_anchor=(0.95, 0.01))
 
 # Position colorbar and supersaturation label
 fig.canvas.draw()
