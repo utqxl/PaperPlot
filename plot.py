@@ -12,6 +12,9 @@ import matplotlib.colors as mcolors
 import matplotlib.ticker as ticker
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from matplotlib.gridspec import GridSpec
 
 # Settings
 start_date_filter = dt.datetime(2024, 6, 10)
@@ -51,8 +54,8 @@ wind_dir_data_avg = np.rad2deg(np.arctan2(wind_dir_v_avg, wind_dir_u_avg)) % 360
 wind_time_avg = wind_series.index.to_numpy()
 wind_speed_data_avg = wind_series.values
 
-# Create figure
-fig, axes = plt.subplots(3, 1, figsize=(20, 15), sharex=True, gridspec_kw={'height_ratios': [1, 1, 1]})
+# Create figure - increased height from 15 to 18
+fig, axes = plt.subplots(3, 1, figsize=(20, 18), sharex=True, gridspec_kw={'height_ratios': [1, 1, 1]})
 fig.subplots_adjust(left=0.08, right=0.85, top=0.95, bottom=0.08, hspace=0.12)
 ax1, ax2, ax3 = axes
 
@@ -158,6 +161,79 @@ def custom_formatter(x, pos=None):
 ax3.xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter))
 ax3.tick_params(axis='x', pad=12, labelsize=24, length=8)
 ax1.set_xlim(start_date_filter, end_date_filter)
+
+# ============================
+# MAP INSET IN BOTTOM MIDDLE OF AX3
+# ============================
+# Cape Grim coordinates
+cape_grim_lat = -40.6831
+cape_grim_lon = 144.6897
+
+# Create inset axes in the bottom middle of ax3
+inset_width = 0.28
+inset_height = 0.45
+inset_left = 0.6 - inset_width/2  # Center horizontally
+inset_bottom = 0.05  # Near the bottom
+
+ax_map = ax3.inset_axes([inset_left, inset_bottom, inset_width, inset_height], 
+                         projection=ccrs.PlateCarree())
+
+# Set map extent - zoomed out to show Tasmania area
+map_extent = [cape_grim_lon - 5, cape_grim_lon + 5, cape_grim_lat - 5, cape_grim_lat + 5]
+
+ax_map.set_extent(map_extent, crs=ccrs.PlateCarree())
+
+# Add map features
+ax_map.add_feature(cfeature.LAND, facecolor='lightgrey', edgecolor='black', linewidth=0.5)
+ax_map.add_feature(cfeature.OCEAN, facecolor='lightblue', alpha=0.5)
+ax_map.add_feature(cfeature.COASTLINE, linewidth=1)
+
+# Plot Cape Grim location
+ax_map.plot(cape_grim_lon, cape_grim_lat, 'ro', markersize=8, transform=ccrs.PlateCarree(), 
+            zorder=5)
+
+# Remove all labels, ticks, and titles from map
+ax_map.set_xticks([])
+ax_map.set_yticks([])
+ax_map.set_title('')
+
+# Draw wind direction circle around Cape Grim
+# Use different radii for latitude and longitude to make circle appear round
+circle_radius_lat = 4.0  # degrees in latitude
+circle_radius_lon = 4.0#circle_radius_lat / np.cos(np.deg2rad(cape_grim_lat))  # degrees in longitude (adjusted)
+
+# Apply longitude correction factor to make circle appear round on the map
+theta = np.linspace(0, 2*np.pi, 100)
+circle_lon = cape_grim_lon + circle_radius_lon * np.cos(theta)
+circle_lat = cape_grim_lat + circle_radius_lat * np.sin(theta)
+ax_map.plot(circle_lon, circle_lat, 'k-', linewidth=2, transform=ccrs.PlateCarree(), zorder=6)
+
+# Add only degree values on the circle
+# Position labels using the corrected radii
+directions = {
+    '360°': (0, circle_radius_lat),        # North
+    '90°': (circle_radius_lon, 0),          # East
+    '180°': (0, -circle_radius_lat),        # South
+    '270°': (-circle_radius_lon, 0)         # West
+}
+
+for label, (dx_lon, dy_lat) in directions.items():
+    label_lon = cape_grim_lon + dx_lon
+    label_lat = cape_grim_lat + dy_lat
+    ax_map.text(label_lon, label_lat, label, transform=ccrs.PlateCarree(),
+                fontsize=10, fontweight='bold', ha='center', va='center',
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8),
+                zorder=7)
+
+# Draw cross lines from center to circle edge
+# North-South line
+ax_map.plot([cape_grim_lon, cape_grim_lon], 
+            [cape_grim_lat - circle_radius_lat, cape_grim_lat + circle_radius_lat],
+            'k-', linewidth=1, alpha=0.5, transform=ccrs.PlateCarree(), zorder=5)
+# East-West line (with longitude correction)
+ax_map.plot([cape_grim_lon - circle_radius_lon, cape_grim_lon + circle_radius_lon],
+            [cape_grim_lat, cape_grim_lat],
+            'k-', linewidth=1, alpha=0.5, transform=ccrs.PlateCarree(), zorder=5)
 
 fig.align_ylabels(axes)
 plt.savefig('ARM.png', dpi=300, bbox_inches='tight')
