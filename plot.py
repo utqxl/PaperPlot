@@ -85,7 +85,7 @@ for species in species_to_plot:
              label=species.replace("_", " ").title(), 
              color=colors.get(species, "black"), linewidth=2, zorder=3)
 ax1.set_ylim(0, 2.5)
-ax1.set_ylabel("ACSM Mass Concentration\n($\mu$g m$^{-3}$)", fontsize=24)
+ax1.set_ylabel("Aerosol Chemical \n Speciation Monitor Mass \n Concentration ($\mu$g m$^{-3}$)", fontsize=24)
 ax1.tick_params(axis='both', labelsize=24, length=8)
 ax1.minorticks_off()
 ax1.legend(loc="upper right", fontsize=24, frameon=True, fancybox=True, shadow=True, bbox_to_anchor=(0.935, 1))
